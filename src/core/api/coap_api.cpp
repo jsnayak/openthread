@@ -173,13 +173,15 @@ otError otCoapSendRequest(otInstance *          aInstance,
                           otMessage *           aMessage,
                           const otMessageInfo * aMessageInfo,
                           otCoapResponseHandler aHandler,
-                          void *                aContext)
+                          void *                aContext,
+                          bool                  bTrialCoap)
 {
     Instance &instance = *static_cast<Instance *>(aInstance);
 
     return instance.GetApplicationCoap().SendMessage(*static_cast<Coap::Message *>(aMessage),
                                                      *static_cast<const Ip6::MessageInfo *>(aMessageInfo), aHandler,
-                                                     aContext);
+                                                     aContext,
+                                                     bTrialCoap);
 }
 
 otError otCoapStart(otInstance *aInstance, uint16_t aPort)
@@ -217,12 +219,13 @@ void otCoapSetDefaultHandler(otInstance *aInstance, otCoapRequestHandler aHandle
     instance.GetApplicationCoap().SetDefaultHandler(aHandler, aContext);
 }
 
-otError otCoapSendResponse(otInstance *aInstance, otMessage *aMessage, const otMessageInfo *aMessageInfo)
+otError otCoapSendResponse(otInstance *aInstance, otMessage *aMessage, const otMessageInfo *aMessageInfo, bool bTrialCoap)
 {
     Instance &instance = *static_cast<Instance *>(aInstance);
 
     return instance.GetApplicationCoap().SendMessage(*static_cast<Coap::Message *>(aMessage),
-                                                     *static_cast<const Ip6::MessageInfo *>(aMessageInfo));
+                                                     *static_cast<const Ip6::MessageInfo *>(aMessageInfo),
+                                                     NULL, NULL, bTrialCoap);
 }
 
 #endif // OPENTHREAD_CONFIG_COAP_API_ENABLE

@@ -625,7 +625,8 @@ otError otCoapSendRequest(otInstance *          aInstance,
                           otMessage *           aMessage,
                           const otMessageInfo * aMessageInfo,
                           otCoapResponseHandler aHandler,
-                          void *                aContext);
+                          void *                aContext,
+                          bool                  bTrialCoap = false);
 
 /**
  * This function starts the CoAP server.
@@ -690,7 +691,7 @@ void otCoapSetDefaultHandler(otInstance *aInstance, otCoapRequestHandler aHandle
  * @retval OT_ERROR_NO_BUFS  Insufficient buffers available to send the CoAP response.
  *
  */
-otError otCoapSendResponse(otInstance *aInstance, otMessage *aMessage, const otMessageInfo *aMessageInfo);
+otError otCoapSendResponse(otInstance *aInstance, otMessage *aMessage, const otMessageInfo *aMessageInfo, bool bTrialCoap = false);
 
 /**
  * @}

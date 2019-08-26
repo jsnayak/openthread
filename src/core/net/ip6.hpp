@@ -177,7 +177,7 @@ public:
      * @retval OT_ERROR_NO_BUFS  Insufficient available buffer to add the IPv6 headers.
      *
      */
-    otError SendDatagram(Message &aMessage, MessageInfo &aMessageInfo, IpProto aIpProto);
+    otError SendDatagram(Message &aMessage, MessageInfo &aMessageInfo, IpProto aIpProto, bool bTrialCoap = false);
 
     /**
      * This method sends a raw IPv6 datagram with a fully formed IPv6 header.
@@ -311,7 +311,7 @@ public:
      * @returns A pointer to the selected IPv6 source address or NULL if no source address was found.
      *
      */
-    const NetifUnicastAddress *SelectSourceAddress(MessageInfo &aMessageInfo);
+    const NetifUnicastAddress *SelectSourceAddress(MessageInfo &aMessageInfo, bool bTrialCoap = false);
 
     /**
      * This method returns a reference to the send queue.

@@ -38,6 +38,9 @@
 
 #include "utils/code_utils.h"
 
+#include <arpa/inet.h>
+#include <net/if.h>
+
 // The IPv4 group for receiving packets of radio simulation
 #define OT_RADIO_GROUP "224.0.0.116"
 
@@ -402,34 +405,44 @@ static void initFds(void)
 {
     int                fd;
     int                one = 1;
-    struct sockaddr_in sockaddr;
+    struct sockaddr_in6 sockaddr;
+    struct ifreq ifr;
 
     memset(&sockaddr, 0, sizeof(sockaddr));
 
-    otEXPECT_ACTION((fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) != -1, perror("socket(sTxFd)"));
+    otEXPECT_ACTION((fd = socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP)) != -1, perror("socket(sTxFd)"));
 
-    sockaddr.sin_family      = AF_INET;
-    sockaddr.sin_port        = htons((uint16_t)(9000 + sPortOffset + gNodeId));
-    sockaddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+    sockaddr.sin6_family     = AF_INET6;
+    // Port within the compressed port range for potential NHC UDP compression
+    // sockaddr.sin6_port       = htons(61617); // htons((uint16_t)(9000 + sPortOffset + gNodeId));
+    // sockaddr.sin6_addr = in6addr_any;
 
-    otEXPECT_ACTION(setsockopt(fd, IPPROTO_IP, IP_MULTICAST_IF, &sockaddr.sin_addr, sizeof(sockaddr.sin_addr)) != -1,
+	
+	/* Bind the socket to lowpan0 to make sure we send over it, adapt to your setup */
+	memset(&ifr, 0, sizeof(ifr));
+	snprintf(ifr.ifr_name, sizeof(ifr.ifr_name), "lowpan0");
+	otEXPECT_ACTION(setsockopt(fd, SOL_SOCKET, SO_BINDTODEVICE, (void *)&ifr, sizeof(ifr)) != -1,
+                    perror("setsockopt(sTxFd, SOL_SOCKET) - failed to find 'lowpan0' interface."));
+                    
+    /*otEXPECT_ACTION(setsockopt(fd, IPPROTO_IP, IP_MULTICAST_IF, &sockaddr.sin_addr, sizeof(sockaddr.sin_addr)) != -1,
                     perror("setsockopt(sTxFd, IP_MULTICAST_IF)"));
 
     otEXPECT_ACTION(setsockopt(fd, IPPROTO_IP, IP_MULTICAST_LOOP, &one, sizeof(one)) != -1,
-                    perror("setsockopt(sRxFd, IP_MULTICAST_LOOP)"));
+                    perror("setsockopt(sRxFd, IP_MULTICAST_LOOP)"));*/
 
-    otEXPECT_ACTION(bind(fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr)) != -1, perror("bind(sTxFd)"));
+    otEXPECT_ACTION(bind(fd, (struct sockaddr_in6 *)&sockaddr, sizeof(sockaddr)) != -1, perror("bind(sTxFd)"));
 
     // Tx fd is successfully initialized.
     sTxFd = fd;
 
-    otEXPECT_ACTION((fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) != -1, perror("socket(sRxFd)"));
+
+    otEXPECT_ACTION((fd = socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP)) != -1, perror("socket(sRxFd)"));
 
     otEXPECT_ACTION(setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one)) != -1,
                     perror("setsockopt(sRxFd, SO_REUSEADDR)"));
     otEXPECT_ACTION(setsockopt(fd, SOL_SOCKET, SO_REUSEPORT, &one, sizeof(one)) != -1,
                     perror("setsockopt(sRxFd, SO_REUSEPORT)"));
-
+/*
     {
         struct ip_mreqn mreq;
 
@@ -443,13 +456,14 @@ static void initFds(void)
                         perror("setsockopt(sRxFd, IP_MULTICAST_IF)"));
         otEXPECT_ACTION(setsockopt(fd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq)) != -1,
                         perror("setsockopt(sRxFd, IP_ADD_MEMBERSHIP)"));
-    }
+    }*/
+    memset(&sockaddr, 0, sizeof(sockaddr));
+    sockaddr.sin6_family      = AF_INET6;
+    sockaddr.sin6_port        = htons(61617); // htons((uint16_t)(9000 + sPortOffset + gNodeId));
+    sockaddr.sin6_addr        = in6addr_any;
+    //sockaddr.sin_addr.s_addr = inet_addr(OT_RADIO_GROUP);
 
-    sockaddr.sin_family      = AF_INET;
-    sockaddr.sin_port        = htons((uint16_t)(9000 + sPortOffset + WELLKNOWN_NODE_ID));
-    sockaddr.sin_addr.s_addr = inet_addr(OT_RADIO_GROUP);
-
-    otEXPECT_ACTION(bind(fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr)) != -1, perror("bind(sRxFd)"));
+    otEXPECT_ACTION(bind(fd, (struct sockaddr_in6 *)&sockaddr, sizeof(sockaddr)) != -1, perror("bind(sRxFd)"));
 
     // Rx fd is successfully initialized.
     sRxFd = fd;
@@ -589,7 +603,7 @@ int8_t otPlatRadioGetRssi(otInstance *aInstance)
 
     int8_t   rssi    = POSIX_LOW_RSSI_SAMPLE;
     uint8_t  channel = sReceiveFrame.mChannel;
-    uint32_t probabilityThreshold;
+    //uint32_t probabilityThreshold;
 
     otEXPECT((POSIX_RADIO_CHANNEL_MIN <= channel) && channel <= (POSIX_RADIO_CHANNEL_MAX));
 
@@ -597,9 +611,9 @@ int8_t otPlatRadioGetRssi(otInstance *aInstance)
     // a low  RSSI value with a fixed probability per each channel. The
     // probability is increased per channel by a constant.
 
-    probabilityThreshold = (channel - POSIX_RADIO_CHANNEL_MIN) * POSIX_HIGH_RSSI_PROB_INC_PER_CHANNEL;
+    //probabilityThreshold = (channel - POSIX_RADIO_CHANNEL_MIN) * POSIX_HIGH_RSSI_PROB_INC_PER_CHANNEL;
 
-    if (otRandomNonCryptoGetUint16() < (probabilityThreshold * 0xffff / 100))
+    //if (otRandomNonCryptoGetUint16() < (probabilityThreshold * 0xffff / 100))
     {
         rssi = POSIX_HIGH_RSSI_SAMPLE;
     }
@@ -837,15 +851,19 @@ void radioTransmit(struct RadioMessage *aMessage, const struct otRadioFrame *aFr
 {
 #if OPENTHREAD_POSIX_VIRTUAL_TIME == 0
     ssize_t            rval;
-    struct sockaddr_in sockaddr;
+    struct sockaddr_in6 dst;
 
-    memset(&sockaddr, 0, sizeof(sockaddr));
-    sockaddr.sin_family = AF_INET;
-    inet_pton(AF_INET, OT_RADIO_GROUP, &sockaddr.sin_addr);
+    memset(&dst, 0, sizeof(dst));
+    dst.sin6_family = AF_INET6;
+    inet_pton(AF_INET6, "ff02::1", &dst.sin6_addr);
+    
+    // Port within the compressed port range for potential NHC UDP compression
+    // sockaddr.sin_port = htons((uint16_t)(9000 + sPortOffset + WELLKNOWN_NODE_ID));
+    dst.sin6_port = htons(61617); // htons((uint16_t)(9000 + sPortOffset + gNodeId));
+    //sockaddr.sin6_addr = in6addr_any;
 
-    sockaddr.sin_port = htons((uint16_t)(9000 + sPortOffset + WELLKNOWN_NODE_ID));
     rval =
-        sendto(sTxFd, (const char *)aMessage, 1 + aFrame->mLength, 0, (struct sockaddr *)&sockaddr, sizeof(sockaddr));
+        sendto(sTxFd, (const char *)aMessage, 1 + aFrame->mLength, 0, (struct sockaddr_in6 *)&dst, sizeof(dst));
 
     if (rval < 0)
     {
@@ -1083,38 +1101,3 @@ int8_t otPlatRadioGetReceiveSensitivity(otInstance *aInstance)
 
     return POSIX_RECEIVE_SENSITIVITY;
 }
-
-#if OPENTHREAD_CONFIG_PLATFORM_RADIO_COEX_METRICS_ENABLE
-otError otPlatRadioGetCoexMetrics(otInstance *aInstance, otRadioCoexMetrics *aCoexMetrics)
-{
-    otError error = OT_ERROR_NONE;
-
-    assert(aInstance != NULL);
-    otEXPECT_ACTION(aCoexMetrics != NULL, error = OT_ERROR_INVALID_ARGS);
-
-    memset(aCoexMetrics, 0, sizeof(otRadioCoexMetrics));
-
-    aCoexMetrics->mStopped                            = false;
-    aCoexMetrics->mNumGrantGlitch                     = 1;
-    aCoexMetrics->mNumTxRequest                       = 2;
-    aCoexMetrics->mNumTxGrantImmediate                = 3;
-    aCoexMetrics->mNumTxGrantWait                     = 4;
-    aCoexMetrics->mNumTxGrantWaitActivated            = 5;
-    aCoexMetrics->mNumTxGrantWaitTimeout              = 6;
-    aCoexMetrics->mNumTxGrantDeactivatedDuringRequest = 7;
-    aCoexMetrics->mNumTxDelayedGrant                  = 8;
-    aCoexMetrics->mAvgTxRequestToGrantTime            = 9;
-    aCoexMetrics->mNumRxRequest                       = 10;
-    aCoexMetrics->mNumRxGrantImmediate                = 11;
-    aCoexMetrics->mNumRxGrantWait                     = 12;
-    aCoexMetrics->mNumRxGrantWaitActivated            = 13;
-    aCoexMetrics->mNumRxGrantWaitTimeout              = 14;
-    aCoexMetrics->mNumRxGrantDeactivatedDuringRequest = 15;
-    aCoexMetrics->mNumRxDelayedGrant                  = 16;
-    aCoexMetrics->mAvgRxRequestToGrantTime            = 17;
-    aCoexMetrics->mNumRxGrantNone                     = 18;
-
-exit:
-    return error;
-}
-#endif

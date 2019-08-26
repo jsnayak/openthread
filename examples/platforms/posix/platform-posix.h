@@ -80,7 +80,7 @@ struct Event
 
 enum
 {
-    WELLKNOWN_NODE_ID = 34, ///< Well-known Unique ID used by a simulated radio that supports promiscuous mode.
+    WELLKNOWN_NODE_ID = 512, ///< Well-known Unique ID used by a simulated radio that supports promiscuous mode.
 };
 
 /**

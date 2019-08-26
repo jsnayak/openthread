@@ -137,8 +137,10 @@ exit:
 otError CoapBase::SendMessage(Message &               aMessage,
                               const Ip6::MessageInfo &aMessageInfo,
                               otCoapResponseHandler   aHandler,
-                              void *                  aContext)
+                              void *                  aContext,
+                              bool                  bTrialCoap)
 {
+    OT_UNUSED_VARIABLE(bTrialCoap);
     otError      error;
     CoapMetadata coapMetadata;
     Message *    storedCopy = NULL;
@@ -177,7 +179,7 @@ otError CoapBase::SendMessage(Message &               aMessage,
                      error = OT_ERROR_NO_BUFS);
     }
 
-    SuccessOrExit(error = Send(aMessage, aMessageInfo));
+    SuccessOrExit(error = Send(aMessage, aMessageInfo, bTrialCoap));
 
 exit:
 
@@ -892,9 +894,10 @@ void Coap::HandleUdpReceive(void *aContext, otMessage *aMessage, const otMessage
                                            *static_cast<const Ip6::MessageInfo *>(aMessageInfo));
 }
 
-otError Coap::Send(ot::Message &aMessage, const Ip6::MessageInfo &aMessageInfo)
+otError Coap::Send(ot::Message &aMessage, const Ip6::MessageInfo &aMessageInfo, bool bTrialCoap)
 {
-    return mSocket.SendTo(aMessage, aMessageInfo);
+    OT_UNUSED_VARIABLE(bTrialCoap);
+    return mSocket.SendTo(aMessage, aMessageInfo, bTrialCoap);
 }
 
 } // namespace Coap

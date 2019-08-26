@@ -84,7 +84,7 @@ public:
      * @retval OT_ERROR_INVALID_ARGS  @p aIndex was out of bounds.
      *
      */
-    otError GetEntry(uint8_t aIndex, otEidCacheEntry &aEntry) const;
+    otError GetEntry(uint16_t aIndex, otEidCacheEntry &aEntry) const;
 
     /**
      * This method removes the EID-to-RLOC cache entries corresponding to an RLOC16.
@@ -164,7 +164,7 @@ private:
         uint16_t          mRetryTimeout;
         uint8_t           mTimeout;
         uint8_t           mFailures;
-        uint8_t           mAge;
+        uint16_t          mAge;
         State             mState;
     };
 

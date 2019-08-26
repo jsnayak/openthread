@@ -150,7 +150,7 @@ exit:
     return error;
 }
 
-otError UdpSocket::SendTo(Message &aMessage, const MessageInfo &aMessageInfo)
+otError UdpSocket::SendTo(Message &aMessage, const MessageInfo &aMessageInfo, bool bTrialCoap)
 {
     otError     error = OT_ERROR_NONE;
     MessageInfo messageInfoLocal;
@@ -194,7 +194,7 @@ otError UdpSocket::SendTo(Message &aMessage, const MessageInfo &aMessageInfo)
     else
 #endif
     {
-        SuccessOrExit(error = Get<Udp>().SendDatagram(aMessage, messageInfoLocal, kProtoUdp));
+        SuccessOrExit(error = Get<Udp>().SendDatagram(aMessage, messageInfoLocal, kProtoUdp, bTrialCoap));
     }
 
 exit:
@@ -318,8 +318,9 @@ Message *Udp::NewMessage(uint16_t aReserved, const otMessageSettings *aSettings)
     return Get<Ip6>().NewMessage(sizeof(UdpHeader) + aReserved, aSettings);
 }
 
-otError Udp::SendDatagram(Message &aMessage, MessageInfo &aMessageInfo, IpProto aIpProto)
+otError Udp::SendDatagram(Message &aMessage, MessageInfo &aMessageInfo, IpProto aIpProto, bool bTrialCoap)
 {
+    OT_UNUSED_VARIABLE(bTrialCoap);
     otError error = OT_ERROR_NONE;
 
 #if OPENTHREAD_CONFIG_UDP_FORWARD_ENABLE
@@ -343,7 +344,7 @@ otError Udp::SendDatagram(Message &aMessage, MessageInfo &aMessageInfo, IpProto 
         SuccessOrExit(error = aMessage.Prepend(&udpHeader, sizeof(udpHeader)));
         aMessage.SetOffset(0);
 
-        error = Get<Ip6>().SendDatagram(aMessage, aMessageInfo, aIpProto);
+        error = Get<Ip6>().SendDatagram(aMessage, aMessageInfo, aIpProto, bTrialCoap);
     }
 
 exit:

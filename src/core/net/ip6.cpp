@@ -444,8 +444,9 @@ void Ip6::EnqueueDatagram(Message &aMessage)
     mSendQueueTask.Post();
 }
 
-otError Ip6::SendDatagram(Message &aMessage, MessageInfo &aMessageInfo, IpProto aIpProto)
+otError Ip6::SendDatagram(Message &aMessage, MessageInfo &aMessageInfo, IpProto aIpProto, bool bTrialCoap)
 {
+    OT_UNUSED_VARIABLE(bTrialCoap);
     otError                    error = OT_ERROR_NONE;
     Header                     header;
     uint16_t                   payloadLength = aMessage.GetLength();
@@ -460,7 +461,7 @@ otError Ip6::SendDatagram(Message &aMessage, MessageInfo &aMessageInfo, IpProto 
 
     if (aMessageInfo.GetSockAddr().IsUnspecified() || aMessageInfo.GetSockAddr().IsMulticast())
     {
-        VerifyOrExit((source = SelectSourceAddress(aMessageInfo)) != NULL, error = OT_ERROR_INVALID_SOURCE_ADDRESS);
+        VerifyOrExit((source = SelectSourceAddress(aMessageInfo, bTrialCoap)) != NULL, error = OT_ERROR_INVALID_SOURCE_ADDRESS);
         header.SetSource(source->GetAddress());
     }
     else
@@ -983,8 +984,9 @@ exit:
     return rval;
 }
 
-const NetifUnicastAddress *Ip6::SelectSourceAddress(MessageInfo &aMessageInfo)
+const NetifUnicastAddress *Ip6::SelectSourceAddress(MessageInfo &aMessageInfo, bool bTrialCoap)
 {
+    OT_UNUSED_VARIABLE(bTrialCoap);
     Address *                  destination = &aMessageInfo.GetPeerAddr();
     const NetifUnicastAddress *rvalAddr    = NULL;
     const Address *            candidateAddr;
@@ -1005,76 +1007,86 @@ const NetifUnicastAddress *Ip6::SelectSourceAddress(MessageInfo &aMessageInfo)
             // Don't use anycast address as source address.
             continue;
         }
-
-        if (rvalAddr == NULL)
+        if(bTrialCoap)
         {
-            // Rule 0: Prefer any address
-            rvalAddr          = addr;
-            rvalPrefixMatched = candidatePrefixMatched;
-        }
-        else if (*candidateAddr == *destination)
-        {
-            // Rule 1: Prefer same address
-            rvalAddr = addr;
-            ExitNow();
-        }
-        else if (addr->GetScope() < rvalAddr->GetScope())
-        {
-            // Rule 2: Prefer appropriate scope
-            if (addr->GetScope() >= overrideScope)
+            if(candidateAddr->IsRoutingLocator())
             {
                 rvalAddr          = addr;
                 rvalPrefixMatched = candidatePrefixMatched;
+                ExitNow();
             }
-            else
-            {
-                continue;
-            }
-        }
-        else if (addr->GetScope() > rvalAddr->GetScope())
-        {
-            if (rvalAddr->GetScope() < overrideScope)
-            {
-                rvalAddr          = addr;
-                rvalPrefixMatched = candidatePrefixMatched;
-            }
-            else
-            {
-                continue;
-            }
-        }
-        else if ((rvalAddr->GetScope() == Address::kRealmLocalScope) && (addr->GetScope() == Address::kRealmLocalScope))
-        {
-            // Additional rule: Prefer EID
-            if (rvalAddr->GetAddress().IsRoutingLocator())
-            {
-                rvalAddr          = addr;
-                rvalPrefixMatched = candidatePrefixMatched;
-            }
-            else
-            {
-                continue;
-            }
-        }
-        else if (addr->mPreferred && !rvalAddr->mPreferred)
-        {
-            // Rule 3: Avoid deprecated addresses
-            rvalAddr          = addr;
-            rvalPrefixMatched = candidatePrefixMatched;
-        }
-        else if (candidatePrefixMatched > rvalPrefixMatched)
-        {
-            // Rule 6: Prefer matching label
-            // Rule 7: Prefer public address
-            // Rule 8: Use longest prefix matching
-            rvalAddr          = addr;
-            rvalPrefixMatched = candidatePrefixMatched;
         }
         else
         {
-            continue;
-        }
-
+	        if (rvalAddr == NULL)
+	        {
+	            // Rule 0: Prefer any address
+	            rvalAddr          = addr;
+	            rvalPrefixMatched = candidatePrefixMatched;
+	        }
+	        else if (*candidateAddr == *destination)
+	        {
+	            // Rule 1: Prefer same address
+	            rvalAddr = addr;
+	            ExitNow();
+	        }
+	        else if (addr->GetScope() < rvalAddr->GetScope())
+	        {
+	            // Rule 2: Prefer appropriate scope
+	            if (addr->GetScope() >= overrideScope)
+	            {
+	                rvalAddr          = addr;
+	                rvalPrefixMatched = candidatePrefixMatched;
+	            }
+	            else
+	            {
+	                continue;
+	            }
+	        }
+	        else if (addr->GetScope() > rvalAddr->GetScope())
+	        {
+	            if (rvalAddr->GetScope() < overrideScope)
+	            {
+	                rvalAddr          = addr;
+	                rvalPrefixMatched = candidatePrefixMatched;
+	            }
+	            else
+	            {
+	                continue;
+	            }
+	        }
+	        else if ((rvalAddr->GetScope() == Address::kRealmLocalScope) && (addr->GetScope() == Address::kRealmLocalScope))
+	        {
+	            // Additional rule: Prefer EID
+	            if (rvalAddr->GetAddress().IsRoutingLocator())
+	            {
+	                rvalAddr          = addr;
+	                rvalPrefixMatched = candidatePrefixMatched;
+	            }
+	            else
+	            {
+	                continue;
+	            }
+	        }
+	        else if (addr->mPreferred && !rvalAddr->mPreferred)
+	        {
+	            // Rule 3: Avoid deprecated addresses
+	            rvalAddr          = addr;
+	            rvalPrefixMatched = candidatePrefixMatched;
+	        }
+	        else if (candidatePrefixMatched > rvalPrefixMatched)
+	        {
+	            // Rule 6: Prefer matching label
+	            // Rule 7: Prefer public address
+	            // Rule 8: Use longest prefix matching
+	            rvalAddr          = addr;
+	            rvalPrefixMatched = candidatePrefixMatched;
+	        }
+	        else
+	        {
+	            continue;
+	        }
+		}
         // infer destination scope based on prefix match
         if (rvalPrefixMatched >= rvalAddr->mPrefixLength)
         {

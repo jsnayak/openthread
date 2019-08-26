@@ -429,7 +429,7 @@ public:
      * @retval OT_ERROR_NO_BUFS  Failed to allocate retransmission data.
      *
      */
-    typedef otError (*Sender)(CoapBase &aCoapBase, ot::Message &aMessage, const Ip6::MessageInfo &aMessageInfo);
+    typedef otError (*Sender)(CoapBase &aCoapBase, ot::Message &aMessage, const Ip6::MessageInfo &aMessageInfo, bool bTrialCoap);
 
     /**
      * This function pointer is called before CoAP server processing a CoAP packets.
@@ -510,7 +510,8 @@ public:
     otError SendMessage(Message &               aMessage,
                         const Ip6::MessageInfo &aMessageInfo,
                         otCoapResponseHandler   aHandler = NULL,
-                        void *                  aContext = NULL);
+                        void *                  aContext = NULL,
+                        bool                  bTrialCoap = false);
 
     /**
      * This method sends a CoAP reset message.
@@ -685,9 +686,9 @@ private:
      * @retval OT_ERROR_NO_BUFS  Failed to allocate retransmission data.
      *
      */
-    otError Send(ot::Message &aMessage, const Ip6::MessageInfo &aMessageInfo)
+    otError Send(ot::Message &aMessage, const Ip6::MessageInfo &aMessageInfo, bool bTrialCoap = false)
     {
-        return mSender(*this, aMessage, aMessageInfo);
+        return mSender(*this, aMessage, aMessageInfo, bTrialCoap);
     }
 
     MessageQueue      mPendingRequests;
@@ -742,11 +743,11 @@ public:
     otError Stop(void);
 
 private:
-    static otError Send(CoapBase &aCoapBase, ot::Message &aMessage, const Ip6::MessageInfo &aMessageInfo)
+    static otError Send(CoapBase &aCoapBase, ot::Message &aMessage, const Ip6::MessageInfo &aMessageInfo, bool bTrialCoap = false)
     {
-        return static_cast<Coap &>(aCoapBase).Send(aMessage, aMessageInfo);
+        return static_cast<Coap &>(aCoapBase).Send(aMessage, aMessageInfo, bTrialCoap);
     }
-    otError Send(ot::Message &aMessage, const Ip6::MessageInfo &aMessageInfo);
+    otError Send(ot::Message &aMessage, const Ip6::MessageInfo &aMessageInfo, bool bTrialCoap = false);
 
     static void HandleUdpReceive(void *aContext, otMessage *aMessage, const otMessageInfo *aMessageInfo);
 

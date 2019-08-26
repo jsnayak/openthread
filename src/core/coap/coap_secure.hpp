@@ -317,8 +317,9 @@ public:
     const Ip6::MessageInfo &GetPeerAddress(void) const { return mDtls.GetPeerAddress(); }
 
 private:
-    static otError Send(CoapBase &aCoapBase, ot::Message &aMessage, const Ip6::MessageInfo &aMessageInfo)
+    static otError Send(CoapBase &aCoapBase, ot::Message &aMessage, const Ip6::MessageInfo &aMessageInfo, bool bTrialCoap)
     {
+        OT_UNUSED_VARIABLE(bTrialCoap);
         return static_cast<CoapSecure &>(aCoapBase).Send(aMessage, aMessageInfo);
     }
     otError Send(ot::Message &aMessage, const Ip6::MessageInfo &aMessageInfo);

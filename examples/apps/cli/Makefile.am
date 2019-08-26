@@ -34,6 +34,7 @@ bin_PROGRAMS                                                           = \
 
 CPPFLAGS_COMMON                                                       += \
     -I$(top_srcdir)/include                                              \
+    -I$(top_srcdir)/examples/apps/cli                                    \
     -I$(top_srcdir)/src/core                                             \
     -I$(top_srcdir)/examples/platforms                                   \
     $(NULL)
@@ -48,7 +49,10 @@ LIBTOOLFLAGS_COMMON                                                   += \
     $(NULL)
 
 SOURCES_COMMON                                                        += \
-    main.c                                                               \
+    main.cpp                                                             \
+    CoapServer.cpp                                                       \
+    CoapClient.cpp                                                       \
+    SupportAPI.cpp                                                       \
     $(NULL)
 
 if OPENTHREAD_ENABLE_BUILTIN_MBEDTLS
@@ -64,6 +68,7 @@ bin_PROGRAMS                                                          += \
 endif
 
 ot_cli_ftd_CPPFLAGS                                                    = \
+    -DOPENTHREAD_FTD=1                \
     $(CPPFLAGS_COMMON)                                                   \
     $(NULL)
 
@@ -73,6 +78,7 @@ ot_cli_ftd_LDADD                                                       = \
     $(LDADD_COMMON)                                                      \
     $(top_builddir)/src/core/libopenthread-ftd.a                         \
     $(LDADD_COMMON)                                                      \
+    -lpthread		                                                     \
     $(NULL)
 
 ot_cli_ftd_LDFLAGS                                                     = \
@@ -94,6 +100,7 @@ bin_PROGRAMS                                                          += \
 endif
 
 ot_cli_mtd_CPPFLAGS                                                    = \
+    -DOPENTHREAD_MTD=1                \
     $(CPPFLAGS_COMMON)                                                   \
     $(NULL)
 

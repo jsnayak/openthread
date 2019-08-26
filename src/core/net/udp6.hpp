@@ -183,7 +183,7 @@ public:
      * @retval OT_ERROR_NO_BUFS       Insufficient available buffer to add the UDP and IPv6 headers.
      *
      */
-    otError SendTo(Message &aMessage, const MessageInfo &aMessageInfo);
+    otError SendTo(Message &aMessage, const MessageInfo &aMessageInfo, bool bTrialCoap = false);
 
     /**
      * This method returns the local socket address.
@@ -296,7 +296,7 @@ public:
      * @retval OT_ERROR_NO_BUFS  Insufficient available buffer to add the IPv6 headers.
      *
      */
-    otError SendDatagram(Message &aMessage, MessageInfo &aMessageInfo, IpProto aIpProto);
+    otError SendDatagram(Message &aMessage, MessageInfo &aMessageInfo, IpProto aIpProto, bool bTrialCoap = false);
 
     /**
      * This method handles a received UDP message.

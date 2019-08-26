@@ -73,13 +73,13 @@ void AddressResolver::Clear(void)
 {
     memset(&mCache, 0, sizeof(mCache));
 
-    for (uint8_t i = 0; i < kCacheEntries; i++)
+    for (uint16_t i = 0; i < kCacheEntries; i++)
     {
         mCache[i].mAge = i;
     }
 }
 
-otError AddressResolver::GetEntry(uint8_t aIndex, otEidCacheEntry &aEntry) const
+otError AddressResolver::GetEntry(uint16_t aIndex, otEidCacheEntry &aEntry) const
 {
     otError error = OT_ERROR_NONE;
 
